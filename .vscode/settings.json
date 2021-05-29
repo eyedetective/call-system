@@ -1,0 +1,11 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "database": "${workspaceFolder:asaply-call-center}/database/database.sqlite",
+            "name": "Asaply Voice"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
+}
