@@ -26,7 +26,7 @@ class TicketController extends Controller
             })
             ->with('repBy','assignTo')
             ->paginate($request->input('length'));
-        return ['recordsTotal'=> $tickets->total(), 'recordsFiltered'=> $tickets->total(),'data'=>$tickets->items()];
+        return response()->json(['recordsTotal'=> $tickets->total(), 'recordsFiltered'=> $tickets->total(),'data'=>$tickets->items()]);
     }
 
     /**
@@ -39,7 +39,7 @@ class TicketController extends Controller
     {
         $ticket = new Ticket();
         $ticket->fill($request->all())->save();
-        return $ticket;
+        return response()->json($ticket);
     }
 
     /**
@@ -51,7 +51,7 @@ class TicketController extends Controller
     public function show(Ticket $ticket)
     {
         $ticket->rep_by = $ticket->load('repBy');
-        return $ticket;
+        return response()->json($ticket);
     }
 
     /**
@@ -64,7 +64,7 @@ class TicketController extends Controller
     public function update(Request $request, Ticket $ticket)
     {
         $ticket->fill($request->all())->save();
-        return $ticket;
+        return response()->json($ticket);
     }
 
     /**
@@ -76,6 +76,6 @@ class TicketController extends Controller
     public function destroy(Ticket $ticket)
     {
         $ticket->delete();
-        return $ticket;
+        return response()->json($ticket);
     }
 }
