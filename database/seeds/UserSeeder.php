@@ -39,7 +39,7 @@ class UserSeeder extends Seeder
             $u->name = 'IT';
             $u->password = Hash::make('secret2021');
             $u->permission = 'Agent';
-            $u->department = 'IT';
+            $u->department = 1;
             $u->created_by = 1;
             $u->updated_by = 1;
             $u->save();
@@ -49,7 +49,7 @@ class UserSeeder extends Seeder
             $u->name = 'Programmer';
             $u->password = Hash::make('secret2021');
             $u->permission = 'Agent';
-            $u->department = 'Programmer';
+            $u->department = 2;
             $u->created_by = 1;
             $u->updated_by = 1;
             $u->save();

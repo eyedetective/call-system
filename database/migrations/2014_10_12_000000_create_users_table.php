@@ -21,7 +21,7 @@ class CreateUsersTable extends Migration
             $table->string('password');
             $table->string('api_token', 80)->unique();
             $table->string('permission', 80);
-            $table->string('department', 80);
+            $table->unsignedInteger('department')->nullable();
             $table->boolean('is_available')->default(false);
             $table->rememberToken();
             $table->unsignedInteger('created_by');

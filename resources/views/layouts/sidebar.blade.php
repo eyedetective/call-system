@@ -34,17 +34,34 @@
                     </a>
                 </li>
                 @if (preg_match('/Admin/',auth()->user()->permission))
-                <li class="nav-item">
-                    <a href="{{route('user.index')}}" class="nav-link{{Route::currentRouteName() == 'user.index' ? ' active':''}}">
-                        <i class="nav-icon fas fa-users"></i>
-                        <p>{{__('page.user.index')}}</p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link{{Route::currentRouteName() == 'settings.index' ? ' active':''}}">
+                <li class="nav-item menu-open">
+                    <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-cogs"></i>
-                        <p>Settings</p>
+                        <p>
+                            {{__('page.settings')}}
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
                     </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{{route('installation')}}" class="nav-link{{Route::currentRouteName() == 'installation' ? ' active':''}}">
+                                <i class="nav-icon far fa-circle"></i>
+                                <p>{{__('page.installation')}}</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{route('user.index')}}" class="nav-link{{Route::currentRouteName() == 'user.index' ? ' active':''}}">
+                                <i class="nav-icon far fa-circle"></i>
+                                <p>{{__('page.user.index')}}</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{route('topic.index')}}" class="nav-link{{Route::currentRouteName() == 'topic.index' ? ' active':''}}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>{{__('page.topic.index')}}</p>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 @endif
                 <li class="nav-item">

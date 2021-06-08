@@ -9,11 +9,10 @@
     <div class="col-md-4 order-md-2 mb-4">
         <div class="card">
             <h5 class="card-header">
-                Status : <span id="txt-status">Offline</span>
-                <div class="btn-groupr float-right" role="group" aria-label="Basic example">
-                    <button class="btn btn-sm btn-primary" id="btnOnline" onclick="setupClient()">Online</button>
-                    <button class="btn btn-sm btn-danger" disabled id="btnOffline"
-                        onclick="setupOffline()">Offline</button>
+                Status :
+                <div class="d-inline custom-control custom-switch custom-switch-off-danger custom-switch-on-success">
+                    <input type="checkbox" class="custom-control-input" id="btnStatus" onchange="setupStatus(this)">
+                    <label class="custom-control-label" for="btnStatus" id="txt-status">Offline</label>
                 </div>
             </h5>
             <div class="card-body">
@@ -132,6 +131,7 @@
 <script src="/js/browser-calls.js"></script>
 <script>
     var user_list = {!! $users !!};
+    window.me = {!! auth()->user() !!};
     var data_table = null;
     $(document).ready(function () {
         data_table = $('#tickets-table').DataTable({
@@ -139,6 +139,7 @@
             "serverSide": true,
             "ajax": {
                 url: '/api/ticket',
+                method:'post',
                 headers: { Authorization: 'Bearer ' + document.querySelector('meta[name=api-token]').getAttribute('content') }
             },
             "drawCallback": function (settings) {

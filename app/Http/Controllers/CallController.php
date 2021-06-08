@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Call;
 use Illuminate\Http\Request;
-use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\Ticket;
 use Illuminate\Support\Facades\Log;
@@ -41,8 +39,17 @@ class CallController extends Controller
     {
         $Ticket = new Ticket();
         $Ticket->schedule_datetime = $request->input('schedule_date').' '.$request->input('schedule_time');
-        $Ticket->ip = $request->ip;
+        $Ticket->ip = $request->ip();
         $Ticket->call_status = 'Scheduled';
+        $Ticket->status = 'pending';
+        $Ticket->fill($request->all())->save();
+        return response()->json(['status' => true]);
+    }
+    public function failCall(Request $request)
+    {
+        $Ticket = new Ticket();
+        $Ticket->ip = $request->ip();
+        $Ticket->call_status = 'Failed';
         $Ticket->status = 'pending';
         $Ticket->fill($request->all())->save();
         return response()->json(['status' => true]);
@@ -80,7 +87,7 @@ class CallController extends Controller
         $client = $dial->client('support');
         $Ticket = new Ticket();
         $Ticket->request = collect($request->all())->toJson();
-        $Ticket->ip = $request->ip;
+        $Ticket->ip = $request->ip();
         $Ticket->status = 'pending';
         $Ticket->call_status = 'Calling';
         $Ticket->response = $response->__toString();

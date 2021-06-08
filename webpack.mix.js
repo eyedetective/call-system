@@ -13,6 +13,6 @@ const mix = require('laravel-mix');
 
 mix.js('resources/js/app.js', 'public/js')
     .js('resources/js/browser-calls.js', 'public/js')
-    .js('resources/js/widget.js', 'public/widget/js')
+    .js('resources/js/widget.js', 'public/js')
     .sass('resources/sass/app.scss', 'public/css')
-    .sass('resources/sass/widget.scss', 'public/widget/css');
+    .version();

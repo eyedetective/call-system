@@ -33,7 +33,7 @@ function setupHandlers(device) {
     /* Report any errors to the call status display */
     device.on('error', function (error) {
         console.log(error);
-        if(String(error.code).match(/312.*/)){setupClient();}
+        if(String(error.code).match(/31205/)){setupClient();}
         updateCallStatus("ERROR: " + error.message);
     });
 
@@ -47,8 +47,12 @@ function setupHandlers(device) {
     /* Callback for when a call ends */
     device.on('disconnect', function(connection) {
         // Disable the hangup button and enable the call buttons
+        document.querySelector('.caller-info').classList.add('d-none');
+        document.getElementById('caller-name').value = '';
+        document.getElementById('caller-phone').value = '';
+        document.getElementById('call-topic').value = '';
         hangUpButton.prop("disabled", true);
-
+        answerButton.prop("disabled", true);
         updateCallStatus("Ready");
     });
 
@@ -89,11 +93,41 @@ function setupHandlers(device) {
     });
 };
 
+window.setupOnline = function() {
+    if ('permissions' in navigator) {
+        var noop = function () {};
+        navigator.getUserMedia = (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
+        try {
+            navigator.permissions.query({name: 'microphone'})
+                .then(function (permission) {
+                    if(permission.state != 'granted'){
+                        document.getElementById('btnStatus').checked = false;
+                        alert('Please allow microphone before online')
+                        navigator.getUserMedia({audio: true}, function(){setupClient();}, noop)
+                    }else{
+                        setupClient();
+                    }
+                    permission.addEventListener('change', function (e) {
+                        if(e.state != 'granted'){setupOffline();}
+                    });
+                });
+            } catch (e) {}
+    }else{
+        setupClient();
+    }
+}
+window.setupStatus = function(el) {
+    if(el.checked){
+        setupOnline()
+    }else{
+        setupOffline()
+    }
+}
+
 window.setupClient = function() {
+    document.getElementById('btnStatus').checked = true;
     document.getElementById('txt-status').innerHTML = "Online";
     updateCallStatus('Connecting to Twilio...');
-    document.getElementById('btnOffline').disabled = false;
-    document.getElementById('btnOnline').disabled = true;
     axios
         .post('/token',{forPage: window.location.pathname,_token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')})
         .then((response) => {
@@ -105,10 +139,9 @@ window.setupClient = function() {
 
 window.setupOffline = function() {
     updateCallStatus('Disconnect')
+    document.getElementById('btnStatus').checked = false;
     document.getElementById('txt-status').innerHTML = "Offline";
-    document.getElementById('btnOffline').disabled = true;
-    document.getElementById('btnOnline').disabled = false;
-    device.destroy();
+    if(device) device.destroy();
 };
 
 window.hangUp = function() {

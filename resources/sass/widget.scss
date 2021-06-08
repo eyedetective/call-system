@@ -57,7 +57,7 @@
 
 
 
-.popup {
+.asaply-popup {
     position: fixed;
     top: 100%;
     width: 100%;
@@ -67,6 +67,7 @@
 
     &.active {
         top: 0;
+        left:0;
         background-color: rgba(3, 3, 3, 0.78);
         transition: background-color .6s, opacity .6s;
     }

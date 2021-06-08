@@ -1,9 +1,9 @@
 <template>
     <div id="widget-customer-call">
         <div id="widget-browser-call" class="">
-            <button id="conversion-btn" aria-label="browser call" @click="popup=true">&phone;</button>
+            <button id="conversion-btn" aria-label="browser call" @click="popup=true"><img :src="domain+'/assets/phone-call.png'" alt="call"></button>
         </div>
-        <div id="popup-reg" :class="['popup', [popup?'active':'']]">
+        <div id="popup-reg" :class="['asaply-popup', [popup?'active':'']]">
             <div class="popup-content">
                 <ul class="tabs-nav">
                     <li @click="tab=1" :class="[tab==1?'active':'']">ต้องการช่วยเหลือด่วน</li>
@@ -51,6 +51,7 @@ import 'vue-tel-input/dist/vue-tel-input.css';
 window.axios = require('axios');
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 export default {
+    props:["domain"],
     components:{VueTelInput},
     data() {
         return {
@@ -147,7 +148,8 @@ export default {
             /* Report any errors to the call status display */
             Twilio.Device.on('error', function (error) {
                 console.error(error);
-                if(String(error.code).match(/312.*/)){_this.setupToken();}
+                if(error.code == 31208){_this.failCall()}
+                else if(String(error.code).match(/31205/)){_this.setupToken();}
                 _this.call.status="ERROR: " + error.message;
             });
             Twilio.Device.on('ready', function (_device) {
@@ -180,7 +182,7 @@ export default {
         },
         setupToken(){
             axios
-                .post('/api/call/token')
+                .post(this.domain+'/api/call/token')
                 .then((response) => {
                     if (response.data.token) {
                         Twilio.Device.setup(response.data.token);
@@ -194,7 +196,16 @@ export default {
         },
         scheduleCall() {
              axios
-                .post('/api/call/schedule', this.form)
+                .post(this.domain+'/api/call/schedule', this.form)
+                .then((response) => {
+                    if (response.data.status) {
+                        alert('done');
+                    }
+                });
+        },
+        failCall() {
+             axios
+                .post(this.domain+'/api/call/fail', this.form)
                 .then((response) => {
                     if (response.data.status) {
                         alert('done');
@@ -207,3 +218,6 @@ export default {
     }
 }
 </script>
+<style lang="scss">
+  @import "../../sass/widget.scss";
+</style>

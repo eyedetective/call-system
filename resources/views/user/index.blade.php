@@ -1,12 +1,18 @@
 @extends('layouts.main')
 @section('title', 'Manage User')
-@section('head_last')
-@endsection
 @section('content')
 <div class="card">
-    <div class="card-header row">
-        <div class="col-md-6"><input type="text" placeholder="search" class="form-control form-control-sm"></div>
-        <div class="col-md-6"><a href="{{route('user.create')}}" class="btn btn-sm btn-primary">{{__('manage.add')}}</a></div>
+    <div class="card-header">
+        <form name="userFilter" action="{{route('user.index')}}" method="get" class="row">
+            <div class="col-4"><input type="text" placeholder="search" class="form-control form-control-sm" name="search" value="{{$params['search']}}"></div>
+            <div class="col-4">
+                <div class="d-inline custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="btnStatus" name="inactive" value="1" @if ($params['inactive']) checked @endif onchange="document.forms['userFilter'].submit()">
+                    <label class="custom-control-label" for="btnStatus" id="txt-status">Show Inactive</label>
+                </div>
+            </div>
+            <div class="col-4 text-right"><a href="{{route('user.create')}}" class="btn btn-sm btn-primary">{{__('manage.add')}} User</a></div>
+        </form>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -17,6 +23,7 @@
                         <th class="text-center">{{__('column.name')}}</th>
                         <th class="text-center">{{__('column.email')}}</th>
                         <th class="text-center">{{__('column.permission')}}</th>
+                        <th class="text-center">{{__('column.status')}}</th>
                         <th class="text-center">{{__('column.created_by')}}</th>
                         <th class="text-center">{{__('column.created_at')}}</th>
                         <th class="text-center">{{__('column.updated_by')}}</th>
@@ -25,25 +32,30 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($data as $item)
+                    @foreach ($users as $user)
                         <tr>
-                            <td>{{$item->username}}</td>
-                            <td>{{$item->name}}</td>
-                            <td>{{$item->email}}</td>
-                            <td>{{$item->permission}}</td>
-                            <td>{{$item->createdBy->username}}</td>
-                            <td>{{$item->created_at->format('d/m/Y H:i:s')}}</td>
-                            <td>{{$item->updatedBy->username}}</td>
-                            <td>{{$item->updated_at->format('d/m/Y H:i:s')}}</td>
-                            <td class="text-center"><a href="{{route('user.edit',$item->id)}}" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i></a></td>
+                            <td>{{$user->username}}</td>
+                            <td>{{$user->name}}</td>
+                            <td>{{$user->email}}</td>
+                            <td>{{$user->permission}}</td>
+                            <td>
+                                @if (is_null($user->deleted_at))
+                                    <a href="{{route('user.delete',$user->id)}}" class="btn btn-sm btn-success">Active</a>
+                                @else
+                                    <a href="{{route('user.restore',$user->id)}}" class="btn btn-sm btn-danger">Inactive</a>
+                                @endif
+                                {{$user->status}}</td>
+                            <td>{{$user->createdBy->username}}</td>
+                            <td>{{$user->created_at->format('d/m/Y H:i:s')}}</td>
+                            <td>{{$user->updatedBy->username}}</td>
+                            <td>{{$user->updated_at->format('d/m/Y H:i:s')}}</td>
+                            <td class="text-center"><a href="{{route('user.edit',$user->id)}}" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i></a></td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
-            {{ $data->links() }}
+            {{ $users->withQueryString()->links() }}
         </div>
     </div>
 </div>
-@endsection
-@section('afterbody')
 @endsection
