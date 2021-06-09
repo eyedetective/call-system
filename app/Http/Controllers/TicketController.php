@@ -24,7 +24,25 @@ class TicketController extends Controller
                 return $q->where('rep_user_id',auth()->user()->id)
                 ->orWhere('assign_user_id',auth()->user()->id);
             })
-            ->with('repBy','assignTo')
+            ->when($request->call_status, function($q) use ($request){
+                return $q->where('call_status',$request->call_status);
+            })
+            ->when($request->status, function($q) use ($request){
+                return $q->where('status',$request->status);
+            })
+            ->when($request->assignment, function($q) use ($request){
+                return $q->where('assign_user_id',$request->assignment);
+            })
+            ->when($request->repBy, function($q) use ($request){
+                return $q->where('rep_user_id',$request->repBy);
+            })
+            ->when($request->topic_id, function($q) use ($request){
+                return $q->where('topic_id',$request->topic_id);
+            })
+            ->when($request->date_start && $request->date_end, function($q) use ($request){
+                return $q->whereBetween('created_at',[$request->date_start.' 00:00:00',$request->date_end.' 23:59:59']);
+            })
+            ->with('repBy','assignTo','topic')
             ->paginate($request->input('length'));
         return response()->json(['recordsTotal'=> $tickets->total(), 'recordsFiltered'=> $tickets->total(),'data'=>$tickets->items()]);
     }
@@ -51,6 +69,7 @@ class TicketController extends Controller
     public function show(Ticket $ticket)
     {
         $ticket->rep_by = $ticket->load('repBy');
+        $ticket->topic = $ticket->load('topic');
         return response()->json($ticket);
     }
 

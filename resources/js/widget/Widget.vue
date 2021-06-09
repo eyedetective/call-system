@@ -13,9 +13,9 @@
                         <div class="event-header" >{{ tab==1 ? 'ต้องการช่วยเหลือด่วน': 'ให้ติดต่อกลับภายหลัง'}}</div>
                         <div id="send" class="send-form">
                             <div class="form-group">
-                                <select v-model="form.topic" class="form-control">
+                                <select v-model="form.topic_id" class="form-control">
                                     <option value="">-- เรื่องที่ต้องการติดต่อ --</option>
-                                    <option v-for="topic in list.topic" :key="'topic'+topic.value" :value="topic.value">{{topic.name}}</option>
+                                    <option v-for="topic in list.topic" :key="'topic'+topic.id" :value="topic.id">{{topic.name}}</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -70,13 +70,13 @@ export default {
             },
             tab: 1,
             list: {
-                topic:[{name:'ไอที',value:'IT'},{name:'โปรแกรม',value:'Programmer'}],
+                topic:[],
                 date:[],
                 time:[],
             },
             popup : false,
             form : {
-                topic : '',
+                topic_id : '',
                 customer_name : '',
                 customer_phone : '',
                 schedule_date : null,
@@ -112,7 +112,7 @@ export default {
     },
     computed: {
         validForm(){
-            return this.form.customer_name && this.form.customer_phone && this.form.topic && this.validPhone;
+            return this.form.customer_name && this.form.customer_phone && this.form.topic_id && this.validPhone;
         }
     },
     mounted(){
@@ -126,6 +126,7 @@ export default {
             month = '0' + month;
         if (day.length < 2)
             day = '0' + day;
+        this.listTopics();
         this.form.schedule_date = [year, month, day].join('-');
         this.form.schedule_time = this.list.time[0];
         this.setupToken();
@@ -142,6 +143,13 @@ export default {
         setInputTel(number,phone){
             this.form.customer_phone = phone.number;
             this.validPhone = phone.valid;
+        },
+        listTopics(){
+            var _this = this;
+            axios.post(_this.domain+'/api/topic/list')
+                .then(response => {
+                    if(response.data){_this.list.topic=response.data;}
+                })
         },
         setupHandlers(){
             var _this = this;

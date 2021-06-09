@@ -28688,7 +28688,9 @@ if (document.querySelector('meta[name=api-token]')) {
 var callStatus = jquery__WEBPACK_IMPORTED_MODULE_1___default()("#call-status");
 var answerButton = jquery__WEBPACK_IMPORTED_MODULE_1___default()(".answer-button");
 var hangUpButton = jquery__WEBPACK_IMPORTED_MODULE_1___default()(".hangup-button");
-var device = null;
+var device = null,
+    device_conn = null,
+    mic_status = true;
 /* Helper function to update the call status bar */
 
 function updateCallStatus(status) {
@@ -28715,14 +28717,17 @@ function setupHandlers(device) {
   /* Callback for when Twilio Client initiates a new connection */
 
   device.on('connect', function (connection) {
-    // Enable the hang up button and disable the call buttons
+    device_conn = connection;
+    device_conn.mute(mic_status); // Enable the hang up button and disable the call buttons
+
     hangUpButton.prop("disabled", false);
     answerButton.prop("disabled", true);
   });
   /* Callback for when a call ends */
 
   device.on('disconnect', function (connection) {
-    // Disable the hangup button and enable the call buttons
+    device_conn = null; // Disable the hangup button and enable the call buttons
+
     document.querySelector('.caller-info').classList.add('d-none');
     document.getElementById('caller-name').value = '';
     document.getElementById('caller-phone').value = '';
@@ -28772,37 +28777,72 @@ function setupHandlers(device) {
 
 ;
 
+window.toggleMute = function (el) {
+  if (device_conn) {
+    device_conn.mute(mic_status);
+
+    if (mic_status) {
+      el.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+      mic_status = false;
+    } else {
+      el.innerHTML = '<i class="fas fa-microphone"></i>';
+      mic_status = true;
+    }
+  }
+};
+
 window.setupOnline = function () {
-  if ('permissions' in navigator) {
-    var noop = function noop() {};
+  var now = new Date(),
+      start = new Date(),
+      end = new Date();
+  var week = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'saturday'];
+  var day = week[now.getDay()];
 
-    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+  if (me[day + '_start']) {
+    var start_time = me[day + '_start'].split(':');
+    start.setHours(start_time[0], start_time[1], 0);
+  }
 
-    try {
-      navigator.permissions.query({
-        name: 'microphone'
-      }).then(function (permission) {
-        if (permission.state != 'granted') {
-          document.getElementById('btnStatus').checked = false;
-          alert('Please allow microphone before online');
-          navigator.getUserMedia({
-            audio: true
-          }, function () {
+  if (me[day + '_end']) {
+    var end_time = me[day + '_end'].split(':');
+    end.setHours(end_time[0], end_time[1], 0);
+  }
+
+  if (start < now && end > now) {
+    if ('permissions' in navigator) {
+      var noop = function noop() {};
+
+      navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+      try {
+        navigator.permissions.query({
+          name: 'microphone'
+        }).then(function (permission) {
+          if (permission.state != 'granted') {
+            document.getElementById('btnStatus').checked = false;
+            alert('Please allow microphone before online');
+            navigator.getUserMedia({
+              audio: true
+            }, function () {
+              setupClient();
+            }, noop);
+          } else {
             setupClient();
-          }, noop);
-        } else {
-          setupClient();
-        }
-
-        permission.addEventListener('change', function (e) {
-          if (e.state != 'granted') {
-            setupOffline();
           }
+
+          permission.addEventListener('change', function (e) {
+            if (e.state != 'granted') {
+              setupOffline();
+            }
+          });
         });
-      });
-    } catch (e) {}
+      } catch (e) {}
+    } else {
+      setupClient();
+    }
   } else {
-    setupClient();
+    document.getElementById('btnStatus').checked = false;
+    alert('คุณอยู่นอกเหนือเวลาทำการ ให้ติดต่อแอดมิน');
   }
 };
 
@@ -28825,12 +28865,18 @@ window.setupClient = function () {
     device = new Device();
     device.setup(response.data.token);
     setupHandlers(device);
+    axios__WEBPACK_IMPORTED_MODULE_0___default.a.post('/api/user/available', {
+      is_available: 1
+    });
   })["catch"](function (error) {
     return console.log("Could not get a token from server!");
   });
 };
 
 window.setupOffline = function () {
+  axios__WEBPACK_IMPORTED_MODULE_0___default.a.post('/api/user/available', {
+    is_available: 0
+  });
   updateCallStatus('Disconnect');
   document.getElementById('btnStatus').checked = false;
   document.getElementById('txt-status').innerHTML = "Offline";
@@ -28881,7 +28927,7 @@ window.setCallDetail = function (id) {
     var ticket = response.data;
     document.getElementById('cdetail-id').value = ticket.id;
     document.getElementById('cdetail-call-status').value = ticket.call_status;
-    document.getElementById('cdetail-topic').value = ticket.topic;
+    document.getElementById('cdetail-topic').value = ticket.topic.name;
     document.getElementById('cdetail-customer-phone').value = ticket.customer_phone;
     document.getElementById('cdetail-customer-name').value = ticket.customer_name;
     document.getElementById('cdetail-customer-name').value = ticket.customer_name;

@@ -3,10 +3,124 @@
 @section('head_last')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap4.min.css">
+<link rel="stylesheet" href="{{asset('admin/plugins/daterangepicker/daterangepicker.css')}}">
+@endsection
+@section('afterbody')
+<script src="{{asset('admin/plugins/moment/moment-with-locales.min.js')}}"></script>
+<script src="{{asset('admin/plugins/daterangepicker/daterangepicker.js')}}"></script>
+<script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap4.min.js"></script>
+<script src="{{mix('/js/browser-calls.js')}}"></script>
+<script>
+    var user_list = {!! $users !!};
+    window.me = {!! auth()->user() !!};
+    var data_table = null;
+    $(function () {
+        $('#date').daterangepicker({maxDate:new Date, locale: {format: 'DD/MM/YYYY'}})
+            .on('apply.daterangepicker', function(ev, picker) {
+                $('#date_start').val(picker.startDate.format('YYYY-MM-DD'));
+                $('#date_end').val(picker.endDate.format('YYYY-MM-DD'));
+            });
+        data_table = $('#tickets-table').DataTable({
+            "processing": true,
+            "serverSide": true,
+            "ajax": {
+                url: '/api/ticket',
+                method:'post',
+                headers: { Authorization: 'Bearer ' + document.querySelector('meta[name=api-token]').getAttribute('content') },
+                data : function ( d ) {
+                    d.call_status = document.querySelector('[name=call_status]').value;
+                    d.status = document.querySelector('[name=status]').value;
+                    d.assignment = document.querySelector('[name=assignment]').value;
+                    d.repBy = document.querySelector('[name=repBy]').value;
+                    d.topic_id = document.querySelector('[name=topic_id]').value;
+                    d.date_start = document.querySelector('[name=date_start]').value || moment().format('YYYY-MM-DD');
+                    d.date_end = document.querySelector('[name=date_end]').value || moment().format('YYYY-MM-DD');
+                }
+            },
+            "drawCallback": function (settings) {
+                $('[data-toggle=popover]').popover();
+            },
+            "columns": [
+                {
+                    "data": "call_status", "name": "call_status",
+                    render: function (data, type, row, meta) {
+                        if (data == 'Answered') {
+                            return '<span class="badge badge-success">' + data + '</span>'
+                        } else if (data == 'Scheduled') {
+                            var d = new Date(row.schedule_datetime);
+                            return '<span class="badge badge-info">' + data + '</span>'
+                            + '<br><small>'+moment(row.schedule_datetime).format('DD/MM/YYYY HH:mm')+'</small>'
+                        } else {
+                            return '<span class="badge badge-danger">' + data + '</span>'
+                        }
+                    }
+                },
+                { "data": "customer_name", "name": "customer_name" },
+                { "data": "customer_phone", "name": "customer_phone" },
+                { "data": "topic_id", "name": "topic_id", className: 'text-center', render:function(data, type, row, meta){return row.topic.name;}},
+                {
+                    "data": "created_at", "name": "created_at",
+                    render: function (data, type, row, meta) {
+                        return moment(data).format('DD/MM/YYYY HH:mm');
+                    }
+                },
+                {
+                    "data": "rep_user_id", "name": "rep_user_id",
+                    render: function (data, type, row, meta) {
+                        return row.rep_by ? row.rep_by.username : '-';
+                    }
+                },
+                {
+                    "data": "assign_user_id", "name": "assign_user_id",
+                    render: function (data, type, row, meta) {
+                        @if (auth()->user()->permission == 'Agent')
+                            return row.assign_to.username;
+                        @else
+                            var $dropdown = '<select class="form-control form-control-sm text-capitalize" onchange="updateTicketField(' + row.id + ',\'assign_user_id\',this)">\
+                                <option '+ (data == '' ? 'selected' : '') + ' value="">-</option>'
+                            user_list.forEach(u => {
+                                $dropdown += '<option ' + (data == u.id ? 'selected' : '') + ' value="' + u.id + '">' + u.username + '</option>';
+                            });
+                            $dropdown += '</select>';
+                            return $dropdown;
+                        @endif
+                    }
+                },
+                {
+                    "data": "status", "name": "status",
+                    render: function (data, type, row, meta) {
+                        @if (auth()->user()->permission == 'Agent')
+                            return data;
+                        @else
+                            return '<select class="form-control form-control-sm text-capitalize" onchange="updateTicketField(' + row.id + ',\'status\',this)">\
+                                <option '+ (data == 'pending' ? 'selected' : '') + ' value="pending">pending</option>\
+                                <option '+ (data == 'spam' ? 'selected' : '') + ' value="spam">spam</option>\
+                                <option '+ (data == 'alert' ? 'selected' : '') + ' value="alert">alert</option>\
+                                <option '+ (data == 'closed' ? 'selected' : '') + ' value="closed">closed</option>\
+                            </select>';
+                        @endif
+                    }
+                },
+                {
+                    "data": "action",
+                    className: 'text-center',
+                    orderable: false,
+                    searchable: false,
+                    render: function (data, type, row, meta) {
+                        return '<button data-widget="control-sidebar" data-slide="true" class="btn btn-sm btn-primary" onclick="setCallDetail('+row.id+')">View</button>';
+                    }
+                }
+            ]
+        });
+    });
+
+    window.refreshTable = function () { data_table.ajax.reload() }
+</script>
 @endsection
 @section('content')
 <div class="row">
-    <div class="col-md-4 order-md-2 mb-4">
+    <div class="col-lg-4 col-md-4">
         <div class="card">
             <h5 class="card-header">
                 Status :
@@ -14,6 +128,8 @@
                     <input type="checkbox" class="custom-control-input" id="btnStatus" onchange="setupStatus(this)">
                     <label class="custom-control-label" for="btnStatus" id="txt-status">Offline</label>
                 </div>
+
+                <button class="btn btn-sm btn-secondary float-right" onclick="toggleMute(this);"><i class="fas fa-microphone"></i></button>
             </h5>
             <div class="card-body">
                 <div class="form-group row">
@@ -42,13 +158,91 @@
                         </div>
                     </div>
                 </div>
-                <button class="btn btn-lg btn-success answer-button" disabled>Answer call</button>
-                <button class="btn btn-lg btn-danger hangup-button" disabled onclick="hangUp()">Hang up</button>
+                <div class="form-group text-center">
+                <button class="btn btn-sm btn-success answer-button" disabled>Answer call</button>
+                <button class="btn btn-sm btn-danger hangup-button" disabled onclick="hangUp()">Hang up</button>
+                </div>
             </div>
         </div>
     </div>
+</div>
+<div class="card">
+    <div class="card-body">
+        <div class="card">
+            <div class="card-header">
+                <button class="btn btn-sm btn-link" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                    <i class="fas fa-search mr-1"></i> Filter Data
+                </button>
+            </div>
 
-    <div class="col-md-8 order-md-1">
+            <div id="collapseOne" class="collapse">
+            <div class="card-body row">
+                <div class="form-group col-4">
+                    <label>Date range</label>
+
+                    <div class="input-group">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text">
+                          <i class="far fa-calendar-alt"></i>
+                        </span>
+                      </div>
+                      <input type="text" class="form-control float-right" id="date">
+                      <input type="hidden" id="date_start" name="date_start" value="">
+                      <input type="hidden" id="date_end" name="date_end" value="">
+                    </div>
+                    <!-- /.input group -->
+                </div>
+                <div class="form-group col-4">
+                    <label for="">Call Status</label>
+                    <select name="call_status" class="form-control form-control-sm text-capitalize">
+                        <option value="">All</option>
+                        <option value="No answer">No answer</option>
+                        <option value="Answered">Answered</option>
+                        <option value="Scheduled">Scheduled</option>
+                        <option value="Failed">Failed</option>
+                    </select>
+                </div>
+                <div class="form-group col-4">
+                    <label for="">Topic</label>
+                    <select name="topic_id" id="" class="form-control form-control-sm">
+                        <option value="">All</option>
+                        @foreach ($topics as $topic)
+                            <option value="{{$topic->id}}">{{$topic->name}}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group col-4">
+                    <label for="">Call Rep</label>
+                    <select name="repBy" id="" class="form-control form-control-sm">
+                        <option value="">All</option>
+                        @foreach ($users as $user)
+                            <option value="{{$user->id}}">{{$user->username}}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group col-4">
+                    <label for="">Assignment</label>
+                    <select name="assignment" id="" class="form-control form-control-sm">
+                        <option value="">All</option>
+                        @foreach ($users as $user)
+                            <option value="{{$user->id}}">{{$user->username}}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group col-4">
+                    <label for="">Status</label>
+                    <select name="status" id="" class="form-control form-control-sm text-capitalize">
+                        <option value="">All</option>
+                        <option value="pending">pending</option>
+                        <option value="spam">spam</option>
+                        <option value="alert">alert</option>
+                        <option value="closed">closed</option>
+                    </select>
+                </div>
+                <button class="btn btn-block btn-sm btn-primary" onclick="refreshTable()"><i class="fas fa-search"></i> Search</button>
+            </div>
+            </div>
+        </div>
         <table id="tickets-table" class="table table-sm table-striped table-bordered" style="width:100%">
             <thead>
                 <tr>
@@ -65,7 +259,6 @@
             </thead>
         </table>
     </div>
-
 </div>
 @endsection
 @section('control-sidebar')
@@ -123,108 +316,4 @@
     </form>
     <hr>
     <button class="btn btn-primary mb-4" onclick="updateTicket()">Update</button>
-@endsection
-
-@section('afterbody')
-<script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap4.min.js"></script>
-<script src="/js/browser-calls.js"></script>
-<script>
-    var user_list = {!! $users !!};
-    window.me = {!! auth()->user() !!};
-    var data_table = null;
-    $(document).ready(function () {
-        data_table = $('#tickets-table').DataTable({
-            "processing": true,
-            "serverSide": true,
-            "ajax": {
-                url: '/api/ticket',
-                method:'post',
-                headers: { Authorization: 'Bearer ' + document.querySelector('meta[name=api-token]').getAttribute('content') }
-            },
-            "drawCallback": function (settings) {
-                $('[data-toggle=popover]').popover();
-            },
-            "columns": [
-                {
-                    "data": "call_status", "name": "call_status",
-                    render: function (data, type, row, meta) {
-                        if (data == 'Answered') {
-                            return '<button class="btn btn-sm btn-success">' + data + '</button>'
-                        } else if (data == 'Scheduled') {
-                            var d = new Date(row.schedule_datetime);
-                            return '<button class="btn btn-sm btn-secondary" data-toggle="popover" data-trigger="focus" title="Schedule datetime" data-content="' + d.toLocaleString('th-TH') + '">' + data + '</button>'
-                        } else {
-                            return '<button class="btn btn-sm btn-danger">' + data + '</button>'
-                        }
-                    }
-                },
-                { "data": "customer_name", "name": "customer_name" },
-                { "data": "customer_phone", "name": "customer_phone" },
-                { "data": "topic", "name": "topic", className: 'text-center', },
-                {
-                    "data": "created_at", "name": "created_at",
-                    render: function (data, type, row, meta) {
-                        var date = new Date(data);
-                        return date.toLocaleDateString('th-TH', {
-                            year: 'numeric',
-                            month: 'numeric',
-                            day: 'numeric',
-                            hour: 'numeric',
-                            minute: 'numeric',
-                            second: 'numeric'
-                        });
-                    }
-                },
-                {
-                    "data": "rep_user_id", "name": "rep_user_id",
-                    render: function (data, type, row, meta) {
-                        return row.rep_by ? row.rep_by.username : '-';
-                    }
-                },
-                {
-                    "data": "assign_user_id", "name": "assign_user_id",
-                    render: function (data, type, row, meta) {
-                        @if (auth()->user()->permission == 'Agent')
-                            return row.assign_to.username;
-                        @else
-                            var $dropdown = '<select class="form-control form-control-sm text-capitalize" onchange="updateTicketField(' + row.id + ',\'assign_user_id\',this)">\
-                                <option '+ (data == '' ? 'selected' : '') + ' value="">-</option>'
-                            user_list.forEach(u => {
-                                $dropdown += '<option ' + (data == u.id ? 'selected' : '') + ' value="' + u.id + '">' + u.username + '</option>';
-                            });
-                            $dropdown += '</select>';
-                            return $dropdown;
-                        @endif
-                    }
-                },
-                {
-                    "data": "status", "name": "status",
-                    render: function (data, type, row, meta) {
-                        @if (auth()->user()->permission == 'Agent')
-                            return data;
-                        @else
-                            return '<select class="form-control form-control-sm text-capitalize" onchange="updateTicketField(' + row.id + ',\'status\',this)">\
-                                <option '+ (data == 'pending' ? 'selected' : '') + ' value="pending">pending</option>\
-                                <option '+ (data == 'spam' ? 'selected' : '') + ' value="spam">spam</option>\
-                                <option '+ (data == 'alert' ? 'selected' : '') + ' value="alert">alert</option>\
-                                <option '+ (data == 'closed' ? 'selected' : '') + ' value="closed">closed</option>\
-                            </select>';
-                        @endif
-                    }
-                },
-                {
-                    "data": "action",
-                    className: 'text-center',
-                    orderable: false,
-                    searchable: false,
-                    render: function (data, type, row, meta) {
-                        return '<button data-widget="control-sidebar" data-slide="true" class="btn btn-sm btn-primary" onclick="setCallDetail('+row.id+')">View</button>';
-                    }
-                }
-            ]
-        });
-    });
-    window.refreshTable = function () { data_table.ajax.reload() }
-</script>
 @endsection

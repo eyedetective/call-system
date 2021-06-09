@@ -17,7 +17,7 @@ class CreateTickets extends Migration
             $table->id();
             $table->string('customer_name',100);
             $table->string('customer_phone',30);
-            $table->string('topic',50);
+            $table->unsignedInteger('topic_id');
             $table->text('comment')->nullable();
             $table->text('request')->nullable();
             $table->text('response')->nullable();

@@ -9,6 +9,7 @@ class InboundController extends Controller
     public function index()
     {
         $users = \App\User::all();
-        return view('inbound', ['users'=>$users]);
+        $topics = \App\Topic::all();
+        return view('inbound', compact('users','topics'));
     }
 }

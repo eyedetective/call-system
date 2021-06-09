@@ -112,4 +112,12 @@ class UserController extends Controller
         User::withTrashed()->where('id', $id)->restore();
         return redirect()->to(route('user.index'));
     }
+
+    public function setAvailable(Request $request)
+    {
+        $user = User::find(auth()->user()->id);
+        $user->fill($request->all());
+        $user->save();
+        return $user;
+    }
 }

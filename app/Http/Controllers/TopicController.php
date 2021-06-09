@@ -25,6 +25,11 @@ class TopicController extends Controller
         return view('topic.index',compact('topics','params'));
     }
 
+    public function list()
+    {
+        return Topic::all();
+    }
+
     /**
      * Show the form for creating a new resource.
      *

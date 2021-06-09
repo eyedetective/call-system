@@ -2608,19 +2608,13 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
       },
       tab: 1,
       list: {
-        topic: [{
-          name: 'ไอที',
-          value: 'IT'
-        }, {
-          name: 'โปรแกรม',
-          value: 'Programmer'
-        }],
+        topic: [],
         date: [],
         time: []
       },
       popup: false,
       form: {
-        topic: '',
+        topic_id: '',
         customer_name: '',
         customer_phone: '',
         schedule_date: null,
@@ -2654,7 +2648,7 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
   },
   computed: {
     validForm: function validForm() {
-      return this.form.customer_name && this.form.customer_phone && this.form.topic && this.validPhone;
+      return this.form.customer_name && this.form.customer_phone && this.form.topic_id && this.validPhone;
     }
   },
   mounted: function mounted() {
@@ -2674,6 +2668,7 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
         year = this.list.date[0].getFullYear();
     if (month.length < 2) month = '0' + month;
     if (day.length < 2) day = '0' + day;
+    this.listTopics();
     this.form.schedule_date = [year, month, day].join('-');
     this.form.schedule_time = this.list.time[0];
     this.setupToken();
@@ -2690,6 +2685,15 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
     setInputTel: function setInputTel(number, phone) {
       this.form.customer_phone = phone.number;
       this.validPhone = phone.valid;
+    },
+    listTopics: function listTopics() {
+      var _this = this;
+
+      axios.post(_this.domain + '/api/topic/list').then(function (response) {
+        if (response.data) {
+          _this.list.topic = response.data;
+        }
+      });
     },
     setupHandlers: function setupHandlers() {
       var _this = this;
@@ -19003,8 +19007,8 @@ var render = function() {
                       {
                         name: "model",
                         rawName: "v-model",
-                        value: _vm.form.topic,
-                        expression: "form.topic"
+                        value: _vm.form.topic_id,
+                        expression: "form.topic_id"
                       }
                     ],
                     staticClass: "form-control",
@@ -19020,7 +19024,7 @@ var render = function() {
                           })
                         _vm.$set(
                           _vm.form,
-                          "topic",
+                          "topic_id",
                           $event.target.multiple
                             ? $$selectedVal
                             : $$selectedVal[0]
@@ -19037,8 +19041,8 @@ var render = function() {
                       return _c(
                         "option",
                         {
-                          key: "topic" + topic.value,
-                          domProps: { value: topic.value }
+                          key: "topic" + topic.id,
+                          domProps: { value: topic.id }
                         },
                         [_vm._v(_vm._s(topic.name))]
                       )

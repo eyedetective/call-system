@@ -4,7 +4,14 @@
 <div class="card">
     <div class="card-header">
         <form name="userFilter" action="{{route('user.index')}}" method="get" class="row">
-            <div class="col-4"><input type="text" placeholder="search" class="form-control form-control-sm" name="search" value="{{$params['search']}}"></div>
+            <div class="col-4">
+                <div class="input-group input-group-sm">
+                    <input type="text" placeholder="search" class="form-control form-control-sm" name="search" value="{{$params['search']}}">
+                    <span class="input-group-append">
+                        <button type="submit" class="btn btn-info btn-flat"><i class="fas fa-search"></i></button>
+                    </span>
+                </div>
+            </div>
             <div class="col-4">
                 <div class="d-inline custom-control custom-switch">
                     <input type="checkbox" class="custom-control-input" id="btnStatus" name="inactive" value="1" @if ($params['inactive']) checked @endif onchange="document.forms['userFilter'].submit()">
